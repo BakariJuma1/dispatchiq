@@ -1,1 +1,25 @@
+@import 'leaflet/dist/leaflet.css';
 @import "tailwindcss";
+
+.leaflet-control-attribution { display: none !important; }
+.leaflet-control-zoom        { display: none !important; }
+
+@keyframes pin-drop {
+  0%   { opacity: 0; transform: translateY(-48px) scale(0.6); }
+  65%  { opacity: 1; transform: translateY(6px)   scale(1.08); }
+  82%  { transform: translateY(-3px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0)     scale(1); }
+}
+
+@keyframes tree-sway {
+  0%, 100% { transform: rotate(0deg); }
+  30%       { transform: rotate(var(--sway-deg, 7deg)); }
+  70%       { transform: rotate(calc(var(--sway-deg, 7deg) * -0.4)); }
+}
+
+@keyframes wind-particle {
+  0%   { transform: translateX(0);      opacity: 0;   }
+  6%   { opacity: 1; }
+  94%  { opacity: 0.7; }
+  100% { transform: translateX(2800px); opacity: 0;   }
+}
