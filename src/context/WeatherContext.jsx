@@ -11,39 +11,54 @@ export function WeatherProvider({ children }) {
   const called = useRef(false)
 
   useEffect(() => {
-    // Ref guard prevents StrictMode's double-invocation from firing two requests
     if (called.current) return
     called.current = true
 
-    getWeatherByGeo()
-      .then(async result => {
-        console.log('[WeatherGeo] raw response:', result)
-        let data = result?.data ?? null
-        let resolvedCity = null
+    async function resolveCity(lat, lon) {
+      try {
+        const rev = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`,
+          { headers: { 'Accept-Language': 'en' } }
+        )
+        const j = await rev.json()
+        return j?.address?.city ?? j?.address?.town ?? j?.address?.village ?? j?.address?.county ?? null
+      } catch {
+        return null
+      }
+    }
 
-        if (!data) {
-          console.warn('[WeatherGeo] geo lookup failed, falling back to Nairobi')
-          const fallback = await getCurrentWeather(-1.2921, 36.8219)
-          console.log('[WeatherGeo] Nairobi fallback response:', fallback)
-          data = fallback?.data ?? null
-          setRateLimitRemaining(fallback?.rateLimitRemaining ?? null)
-          resolvedCity = 'Nairobi'
-        } else {
-          const timezone = data?.location?.timezone ?? data?.timezone ?? ''
-          resolvedCity = timezone.includes('/')
-            ? timezone.split('/').pop().replace(/_/g, ' ')
-            : null
-          setRateLimitRemaining(result?.rateLimitRemaining ?? null)
-        }
+    async function fetchWeather(lat, lon) {
+      const result = await getWeatherByGeo(lat, lon)
+      console.log('[WeatherGeo] raw response:', result)
+      let data = result?.data ?? null
 
-        setGeoData(data)
-        setCity(resolvedCity)
-        setGeoLoading(false)
-      })
-      .catch(err => {
-        console.error('[WeatherGeo] unexpected error:', err)
-        setGeoLoading(false)
-      })
+      if (!data) {
+        console.warn('[WeatherGeo] lookup failed, falling back to Nairobi')
+        const fallback = await getCurrentWeather(-1.2921, 36.8219)
+        data = fallback?.data ?? null
+        setRateLimitRemaining(fallback?.rateLimitRemaining ?? null)
+        setCity('Nairobi')
+      } else {
+        setRateLimitRemaining(result?.rateLimitRemaining ?? null)
+        const resLat = data?.location?.lat ?? lat
+        const resLon = data?.location?.lon ?? lon
+        const city = resLat != null ? await resolveCity(resLat, resLon) : null
+        setCity(city)
+      }
+
+      setGeoData(data)
+      setGeoLoading(false)
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => fetchWeather(coords.latitude, coords.longitude).catch(console.error),
+        () => fetchWeather(null, null).catch(console.error),
+        { timeout: 8000 }
+      )
+    } else {
+      fetchWeather(null, null).catch(console.error)
+    }
   }, [])
 
   return (

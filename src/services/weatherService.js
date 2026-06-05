@@ -31,8 +31,10 @@ export const getCurrentWeather = (lat, lon) =>
 export const getHourlyForecast = (lat, lon) =>
   request('/v1/hourly', { lat, lon, days: 2 })
 
-export const getWeatherByGeo = () =>
-  request('/v1/weather-geo', { ip: 'auto', ai: true })
+export const getWeatherByGeo = (lat, lon) =>
+  lat != null && lon != null
+    ? request('/v1/weather-geo', { lat, lon, ai: true })
+    : request('/v1/weather-geo', { ip: 'auto', ai: true })
 
 export const getWeeklyForecast = (lat, lon) =>
   request('/v1/weather', { lat, lon, days: 7, ai: true })
