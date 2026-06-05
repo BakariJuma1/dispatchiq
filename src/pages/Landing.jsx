@@ -72,8 +72,8 @@ export default function Landing() {
   const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
-  const handleGoogleSignIn = async () => {
-    try { await googleSignIn() } catch {}
+  const handleGoogleSignIn = () => {
+    googleSignIn()
   }
 
   return (
