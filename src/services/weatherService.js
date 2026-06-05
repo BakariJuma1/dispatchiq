@@ -1,8 +1,8 @@
-const BASE_URL = 'https://api.weather-ai.co'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 const API_KEY = import.meta.env.VITE_WEATHER_API_KEY
 
 async function request(path, params = {}) {
-  const url = new URL(`${BASE_URL}${path}`)
+  const url = new URL(`${BASE_URL}${path}`, window.location.origin)
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
 
   try {
