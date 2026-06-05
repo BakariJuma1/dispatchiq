@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getWeatherByGeo } from '../services/weatherService'
 import { getRiderSafetyStatus } from '../utils/dispatchLogic'
 import { useAuth } from '../context/AuthContext'
+import { useWeather } from '../context/WeatherContext'
+import Navbar from '../components/Navbar'
 
 const STATUS_STYLES = {
   GREEN: { bg: 'bg-green-500',  text: 'text-white' },
@@ -11,96 +11,74 @@ const STATUS_STYLES = {
 }
 
 export default function Landing() {
-  const { user, googleSignIn } = useAuth()
+  const { googleSignIn } = useAuth()
+  const { geoData, city, geoLoading } = useWeather()
   const navigate = useNavigate()
 
-  const [city,    setCity]    = useState(null)
-  const [safety,  setSafety]  = useState(null)
-  const [briefing, setBriefing] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  // Redirect signed-in users straight to the dashboard
-  useEffect(() => {
-    if (user) navigate('/dashboard', { replace: true })
-  }, [user, navigate])
-
-  // Fire geo weather immediately on mount — no user action required
-  useEffect(() => {
-    getWeatherByGeo().then((result) => {
-      if (!result) { setLoading(false); return }
-
-      const { data } = result
-      const current  = data?.current ?? data?.data ?? data
-      const location = data?.location ?? data?.city ?? {}
-
-      setCity(location.name ?? location.city ?? 'Your Location')
-      setSafety(getRiderSafetyStatus(current))
-
-      // Use AI briefing from response if present, otherwise fall back to reason
-      const aiBriefing = data?.ai_summary ?? data?.briefing ?? null
-      setBriefing(aiBriefing ?? null)
-      setLoading(false)
-    })
-  }, [])
-
-  const handleGoogleSignIn = async () => {
-    try { await googleSignIn() } catch { /* redirect handled by auth state */ }
-  }
-
+  const current   = geoData?.current ?? geoData?.current_weather ?? {}
+  const safety    = geoData ? getRiderSafetyStatus(current) : null
+  const briefing  = geoData?.ai_summary ?? geoData?.briefing ?? geoData?.summary ?? null
   const statusStyle = safety ? STATUS_STYLES[safety.status] ?? STATUS_STYLES.AMBER : null
 
+  const handleGoogleSignIn = async () => {
+    try { await googleSignIn() } catch { /* auth state handles redirect */ }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
+      <div className="max-w-2xl w-full mx-auto px-4">
+        <Navbar city={city} cityLoading={geoLoading} />
+      </div>
 
-        {/* Brand */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight">DispatchIQ</h1>
-          <p className="mt-1 text-gray-400 text-sm">Weather-aware fleet dispatch</p>
-        </div>
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="w-full max-w-md space-y-8">
 
-        {/* Live weather card — visible immediately, no sign-in required */}
-        <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 space-y-3">
-          {loading ? (
-            <div className="space-y-2 animate-pulse">
-              <div className="h-5 bg-gray-700 rounded w-1/3" />
-              <div className="h-4 bg-gray-700 rounded w-full" />
-            </div>
-          ) : safety ? (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-semibold">{city}</span>
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusStyle.bg} ${statusStyle.text}`}>
-                  {safety.status}
-                </span>
+          <div className="text-center">
+            <h1 className="text-4xl font-bold tracking-tight">DispatchIQ</h1>
+            <p className="mt-1 text-gray-400 text-sm">Weather-aware fleet dispatch</p>
+          </div>
+
+          <div className="bg-gray-900 rounded-2xl p-6 border border-gray-800 space-y-3">
+            {geoLoading ? (
+              <div className="space-y-2 animate-pulse">
+                <div className="h-5 bg-gray-700 rounded w-1/3" />
+                <div className="h-4 bg-gray-700 rounded w-full" />
               </div>
-              <p className="text-gray-300 text-sm leading-relaxed">
-                {briefing ?? safety.reason}
-              </p>
-            </>
-          ) : (
-            <p className="text-gray-500 text-sm">Could not retrieve weather data.</p>
-          )}
+            ) : safety ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold">{city ?? 'Detected Location'}</span>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusStyle.bg} ${statusStyle.text}`}>
+                    {safety.status}
+                  </span>
+                </div>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  {briefing ?? safety.reason}
+                </p>
+              </>
+            ) : (
+              <p className="text-gray-500 text-sm">Could not retrieve weather data.</p>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={handleGoogleSignIn}
+              className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 font-semibold py-3 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              <GoogleIcon />
+              Sign in with Google
+            </button>
+
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="w-full py-3 rounded-xl border border-gray-700 text-gray-300 hover:border-gray-500 hover:text-white transition-colors text-sm"
+            >
+              Continue as Guest
+            </button>
+          </div>
+
         </div>
-
-        {/* Auth actions */}
-        <div className="space-y-3">
-          <button
-            onClick={handleGoogleSignIn}
-            className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 font-semibold py-3 rounded-xl hover:bg-gray-100 transition-colors"
-          >
-            <GoogleIcon />
-            Sign in with Google
-          </button>
-
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="w-full py-3 rounded-xl border border-gray-700 text-gray-300 hover:border-gray-500 hover:text-white transition-colors text-sm"
-          >
-            Continue as Guest
-          </button>
-        </div>
-
       </div>
     </div>
   )
