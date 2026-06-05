@@ -33,7 +33,7 @@ export default function Navbar({ city, cityLoading }) {
                 `text-xs transition-colors ${isActive ? 'text-white font-medium' : 'text-gray-500 hover:text-gray-300'}`
               }
             >
-              Profile
+              Fleet Prefs
             </NavLink>
           )}
         </nav>

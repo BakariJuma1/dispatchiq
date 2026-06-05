@@ -4,9 +4,10 @@ import { getCurrentWeather, getWeatherByGeo } from '../services/weatherService'
 const WeatherContext = createContext(null)
 
 export function WeatherProvider({ children }) {
-  const [geoData,    setGeoData]    = useState(null)
-  const [city,       setCity]       = useState(null)
-  const [geoLoading, setGeoLoading] = useState(true)
+  const [geoData,            setGeoData]            = useState(null)
+  const [city,               setCity]               = useState(null)
+  const [geoLoading,         setGeoLoading]         = useState(true)
+  const [rateLimitRemaining, setRateLimitRemaining] = useState(null)
   const called = useRef(false)
 
   useEffect(() => {
@@ -25,12 +26,14 @@ export function WeatherProvider({ children }) {
           const fallback = await getCurrentWeather(-1.2921, 36.8219)
           console.log('[WeatherGeo] Nairobi fallback response:', fallback)
           data = fallback?.data ?? null
+          setRateLimitRemaining(fallback?.rateLimitRemaining ?? null)
           resolvedCity = 'Nairobi'
         } else {
           const timezone = data?.location?.timezone ?? data?.timezone ?? ''
           resolvedCity = timezone.includes('/')
             ? timezone.split('/').pop().replace(/_/g, ' ')
             : null
+          setRateLimitRemaining(result?.rateLimitRemaining ?? null)
         }
 
         setGeoData(data)
@@ -44,7 +47,7 @@ export function WeatherProvider({ children }) {
   }, [])
 
   return (
-    <WeatherContext.Provider value={{ geoData, city, geoLoading }}>
+    <WeatherContext.Provider value={{ geoData, city, geoLoading, rateLimitRemaining }}>
       {children}
     </WeatherContext.Provider>
   )
