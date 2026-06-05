@@ -10,13 +10,17 @@ async function request(path, params = {}) {
       headers: { Authorization: `Bearer ${API_KEY}` },
     })
 
+    const text = await res.text()
+    console.log(`[WeatherAPI] ${path} → status=${res.status}`, text)
+
     if (!res.ok) return null
 
-    const data = await res.json()
+    const data = JSON.parse(text)
     const rateLimitRemaining = res.headers.get('X-RateLimit-Remaining')
 
     return { data, rateLimitRemaining }
-  } catch {
+  } catch (err) {
+    console.error(`[WeatherAPI] ${path} threw:`, err)
     return null
   }
 }

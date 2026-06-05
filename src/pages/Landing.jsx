@@ -15,10 +15,10 @@ export default function Landing() {
   const { geoData, city, geoLoading } = useWeather()
   const navigate = useNavigate()
 
-  const current   = geoData?.current ?? geoData?.current_weather ?? {}
-  const safety    = geoData ? getRiderSafetyStatus(current) : null
+  const current   = geoData?.current ?? geoData?.current_weather ?? geoData?.weather ?? {}
+  const safety    = getRiderSafetyStatus(geoData ? current : null)
   const briefing  = geoData?.ai_summary ?? geoData?.briefing ?? geoData?.summary ?? null
-  const statusStyle = safety ? STATUS_STYLES[safety.status] ?? STATUS_STYLES.AMBER : null
+  const statusStyle = STATUS_STYLES[safety.status] ?? STATUS_STYLES.AMBER
 
   const handleGoogleSignIn = async () => {
     try { await googleSignIn() } catch { /* auth state handles redirect */ }
@@ -44,7 +44,7 @@ export default function Landing() {
                 <div className="h-5 bg-gray-700 rounded w-1/3" />
                 <div className="h-4 bg-gray-700 rounded w-full" />
               </div>
-            ) : safety ? (
+            ) : (
               <>
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-semibold">{city ?? 'Detected Location'}</span>
@@ -56,8 +56,6 @@ export default function Landing() {
                   {briefing ?? safety.reason}
                 </p>
               </>
-            ) : (
-              <p className="text-gray-500 text-sm">Could not retrieve weather data.</p>
             )}
           </div>
 
